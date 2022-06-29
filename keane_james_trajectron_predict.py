@@ -17,7 +17,7 @@ sys.path.append('../../')
 # from custom_trajectron_for_mpc import *
 from statistics import mean,stdev
 
-"test"
+
 
 
 ### New Code for generating dynamic obstacle ###
