@@ -241,12 +241,10 @@ def generate_node_from_pos_lsts(x_lst,y_lst,dt,node_type,node_id):
         print("Not feasible, only 1 position")     
 
     x = np.array(x_lst)
-    print(x.shape)
     y = np.array(y_lst)
     
 
     vx = derivative_of(x, dt)
-    print(vx.shape)
     vy = derivative_of(y, dt)
     ax = derivative_of(vx, dt)
     ay = derivative_of(vy, dt)
@@ -257,7 +255,6 @@ def generate_node_from_pos_lsts(x_lst,y_lst,dt,node_type,node_id):
                     ('velocity', 'y'): vy,
                     ('acceleration', 'x'): ax,
                     ('acceleration', 'y'): ay}
-    print("new data dict is",data_dict)
     data_columns_pedestrian = pd.MultiIndex.from_product([['position', 'velocity', 'acceleration'], ['x', 'y']])
     node_data = pd.DataFrame(data_dict, columns=data_columns_pedestrian) 
 
@@ -266,7 +263,6 @@ def generate_node_from_pos_lsts(x_lst,y_lst,dt,node_type,node_id):
     # accelerations of an object at its different timesteps
     node = Node(node_type=node_type, node_id=node_id, data=node_data, frequency_multiplier=node_frequency_multiplier)
     node.first_timestep = 0
-    print(time.clock()-start_time,"seconds")
     return node
 
 def initialise_pedestrian_scene(node_df,dt):

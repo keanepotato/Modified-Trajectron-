@@ -29,13 +29,19 @@ horz = 3
 num_trajs = 3
 
 ## put your x,y data in these lists below, contiuously append/ modify the lists with new info
-x_pos_list2 = []
-y_pos_list2 = []
+x_pos_list2 = [1,2,3,4]
+y_pos_list2 = [1,2,3,4]
 
-## At each timestep, clear the scene & append new nodes from new lists
-scene.nodes.clear()
-scene.nodes.append(generate_node_from_pos_lsts(x_pos_list2,y_pos_list2,0.4,env.NodeType.PEDESTRIAN,"test"))
+while True:
+    ## At each timestep, clear the scene & append new nodes from new lists
+    scene.nodes.clear()
+    scene.nodes.append(generate_node_from_pos_lsts(x_pos_list2,y_pos_list2,0.4,env.NodeType.PEDESTRIAN,"test"))
 
-## predict with the new scene, producing lists of all mean x,y ; std x,y 
-mean_x, std_x, mean_y, std_y = predict_from_timestep(new_trajectron,horz,num_trajs,2,scene)
-print(mean_x,std_x,mean_y,std_y)
+    ## predict with the new scene, producing lists of all mean x,y ; std x,y 
+    latest_timestep = len(x_pos_list2)-1
+    mean_x, std_x, mean_y, std_y = predict_from_timestep(new_trajectron,horz,num_trajs,latest_timestep,scene)
+    print(mean_x,mean_y)
+    
+    ## Append new data to list (this is an example)
+    x_pos_list2.append(1)
+    y_pos_list2.append(2)
