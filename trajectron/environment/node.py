@@ -2,7 +2,7 @@ import random
 import numpy as np
 import pandas as pd
 from environment import DoubleHeaderNumpyArray
-from ncls import NCLS
+#from ncls import NCLS
 
 
 class Node(object):
@@ -102,6 +102,7 @@ class Node(object):
         length = tr_scene[1] - tr_scene[0] + 1  # tr is inclusive
         tr, paddingl, paddingu = self.scene_ts_to_node_ts(tr_scene)
         data_array = self.data[tr[0]:tr[1] + 1, state]
+        #print("data array is",data_array)
         padded_data_array = np.full((length, data_array.shape[1]), fill_value=padding)
         padded_data_array[paddingl:length - paddingu] = data_array
         return padded_data_array

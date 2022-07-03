@@ -1,7 +1,7 @@
 import copy
 import numpy as np
-#from .scene_graph import TemporalSceneGraph, SceneGraph
-from .scene_graph_risky import TemporalSceneGraph, SceneGraph
+from .scene_graph import TemporalSceneGraph, SceneGraph
+#from .scene_graph_risky import TemporalSceneGraph, SceneGraph
 from .node import MultiNode
 
 
@@ -43,6 +43,7 @@ class Scene(object):
         input_dict = dict()
         existing_nodes = self.get_nodes_clipped_at_time(timesteps=np.array([timestep]),
                                                         state=state)
+        print("calling",timestep)
         tr_scene = np.array([timestep, timestep])
         for node in existing_nodes:
             input_dict[node] = node.get(tr_scene, state[node.type])
@@ -188,9 +189,9 @@ class Scene(object):
                 for quantity, values in state[node.type].items():
                     for value in values:
                         data_header.append((quantity, value))
-
+                
                 data_header_memo[node.type] = data_header
-
+            #print(clipped_value)
             copied_node.overwrite_data(clipped_value, data_header_memo[node.type])
             copied_node.first_timestep = tr_scene[0]
 

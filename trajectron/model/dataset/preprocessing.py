@@ -2,7 +2,7 @@ import torch
 import numpy as np
 import collections.abc
 from torch.utils.data._utils.collate import default_collate
-import dill
+#import dill
 container_abcs = collections.abc
 
 

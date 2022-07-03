@@ -4,16 +4,16 @@ import sys
 import time
 import json
 import torch
-import dill
+#import dill
 import random
 import math
-import pathlib
+#import pathlib
 
 # os.chdir("/home/kong35/Trajectron-plus-plus/trajectron/")
 # print(os.getcwd())
-sys.path.append("/home/kong35/Trajectron-plus-plus/trajectron/")
+sys.path.append(r"C:\Users\65932\OneDrive\Desktop\Gatech_Internship\Modified-Trajectron-\trajectron")
 
-import evaluation
+#import evaluation
 import numpy as np
 import visualization as vis
 import pandas as pd
@@ -90,7 +90,7 @@ standardization = {
     }
 }
 
-log_dir = "/home/kong35/Trajectron-plus-plus/experiments/nuScenes/models"
+log_dir = r"C:\Users\65932\OneDrive\Desktop\Gatech_Internship\Modified-Trajectron-\experiments\nuScenes\models"
 conf = "config.json"
 model_dir = os.path.join(log_dir, 'int_ee_cassie')
 
@@ -113,17 +113,6 @@ hyperparams['offline_scene_graph'] = args.offline_scene_graph
 hyperparams['incl_robot_node'] = args.incl_robot_node
 hyperparams['edge_encoding'] = not args.no_edge_encoding
 hyperparams['use_map_encoding'] = args.map_encoding
-
-# Generating the environment with the particular node
-env = Environment(node_type_list=['VEHICLE', 'PEDESTRIAN'], standardization=standardization)
-attention_radius = dict()
-attention_radius[(env.NodeType.PEDESTRIAN, env.NodeType.PEDESTRIAN)] = 10.0
-attention_radius[(env.NodeType.PEDESTRIAN, env.NodeType.VEHICLE)] = 20.0
-attention_radius[(env.NodeType.VEHICLE, env.NodeType.PEDESTRIAN)] = 20.0
-attention_radius[(env.NodeType.VEHICLE, env.NodeType.VEHICLE)] = 30.0
-env.attention_radius = attention_radius
-env.robot_type = env.NodeType.VEHICLE
-
 
 def augment(scene):
     scene_aug = np.random.choice(scene.augmented)
@@ -201,6 +190,85 @@ def obtain_node_df_from_txt(txt_filename,node_id):
 
     # env.scenes = scenes
 
+def generate_node(node_df,dt):
+    start_time = time.clock()
+    node_df.sort_values('frame_id', inplace=True)
+    max_timesteps = node_df['frame_id'].max()
+
+    scene = Scene(timesteps=max_timesteps + 1, dt=dt, name="test 1", aug_func=augment)
+
+    node_frequency_multiplier = 1
+   
+    if node_df['x'].shape[0] < 2:
+        print("Not feasible, only 1 position")
+    
+
+    if not np.all(np.diff(node_df['frame_id']) == 1):
+        print('Occlusion')
+         
+
+    node_values = node_df[['x', 'y']].values
+    x = node_values[:, 0]
+    y = node_values[:, 1]
+    vx = derivative_of(x, scene.dt)
+    vy = derivative_of(y, scene.dt)
+    ax = derivative_of(vx, scene.dt)
+    ay = derivative_of(vy, scene.dt)
+
+    data_dict = {('position', 'x'): x,
+                    ('position', 'y'): y,
+                    ('velocity', 'x'): vx,
+                    ('velocity', 'y'): vy,
+                    ('acceleration', 'x'): ax,
+                    ('acceleration', 'y'): ay}
+    print("original data dict is",data_dict)
+    data_columns_pedestrian = pd.MultiIndex.from_product([['position', 'velocity', 'acceleration'], ['x', 'y']])
+    node_data = pd.DataFrame(data_dict, columns=data_columns_pedestrian) 
+
+    #create node_data corresponding to each timestep (likely 0.5 seconds)
+    #data dict is an array which contains all the positions/ velocities/ 
+    # accelerations of an object at its different timesteps
+    node = Node(node_type=node_df.iloc[0]['type'], node_id="Pedestrian 1", data=node_data, frequency_multiplier=node_frequency_multiplier)
+    node.first_timestep = node_df['frame_id'].iloc[0]  #assign each timestep
+    print(time.clock()-start_time,"seconds")
+    return node
+
+def generate_node_from_pos_lsts(x_lst,y_lst,dt,node_type,node_id):
+    start_time = time.clock()
+    node_frequency_multiplier = 1
+   
+    if len(x_lst) < 2 or len(y_lst) < 2:
+        print("Not feasible, only 1 position")     
+
+    x = np.array(x_lst)
+    print(x.shape)
+    y = np.array(y_lst)
+    
+
+    vx = derivative_of(x, dt)
+    print(vx.shape)
+    vy = derivative_of(y, dt)
+    ax = derivative_of(vx, dt)
+    ay = derivative_of(vy, dt)
+
+    data_dict = {('position', 'x'): x,
+                    ('position', 'y'): y,
+                    ('velocity', 'x'): vx,
+                    ('velocity', 'y'): vy,
+                    ('acceleration', 'x'): ax,
+                    ('acceleration', 'y'): ay}
+    print("new data dict is",data_dict)
+    data_columns_pedestrian = pd.MultiIndex.from_product([['position', 'velocity', 'acceleration'], ['x', 'y']])
+    node_data = pd.DataFrame(data_dict, columns=data_columns_pedestrian) 
+
+    #create node_data corresponding to each timestep (likely 0.5 seconds)
+    #data dict is an array which contains all the positions/ velocities/ 
+    # accelerations of an object at its different timesteps
+    node = Node(node_type=node_type, node_id=node_id, data=node_data, frequency_multiplier=node_frequency_multiplier)
+    node.first_timestep = 0
+    print(time.clock()-start_time,"seconds")
+    return node
+
 def initialise_pedestrian_scene(node_df,dt):
     """
     create a function that takes in a node_df (pandas dataframe which contains the different positions of a particular pedestrian)
@@ -259,6 +327,10 @@ def initialise_pedestrian_scene(node_df,dt):
     #     node.is_robot = True
     #     scene.robot = node
     scene.nodes.append(node)
+    return scene
+
+def initialise_dummy_scene(max_timesteps,dt):
+    scene = Scene(timesteps=max_timesteps, dt=dt, name="test scene", aug_func=augment)
     return scene
 
 def generate_pedestrian_obstacle_for_trajectron(xs,ys):
@@ -347,6 +419,7 @@ def predict_from_timestep(trajectron,prediction_horizon,num_trajectories,timeste
     maps = None
     start = time.time()
     ##@TODO: Try the trajectron prediction of entire distribution
+    #print("the input dict is",input_dict)
     dists, preds = trajectron.incremental_forward(input_dict,
                                                     maps,
                                                     prediction_horizon=prediction_horizon, #how long into the future do you want to predict?
